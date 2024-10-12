@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  mysql-db:
+    image: mysql:8.0
+    container_name: mysql-container
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"  # Permitir una contraseña vacía - Solo para test
+      MYSQL_DATABASE: accounts
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql  # Montar el script datos prueba
+    networks:
+      - my_network
+
+  app:
+    build:
+      context: ./projects/appusermanagement
+      dockerfile: Dockerfile
+    container_name: user-management-app
+    ports:
+      - "8081:8081"  
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/accounts  # URL de conexión a MySQL
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: pass
+    depends_on:
+      - mysql-db
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
