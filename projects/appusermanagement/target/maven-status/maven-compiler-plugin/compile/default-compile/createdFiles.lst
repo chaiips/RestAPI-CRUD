@@ -4,5 +4,6 @@ com\mp\appusermanagement\controllers\UserController.class
 com\mp\appusermanagement\models\UserModel.class
 com\mp\appusermanagement\dto\UserDTO.class
 com\mp\appusermanagement\dto\UserDTO2.class
+com\mp\appusermanagement\AppusermanagementApplication$1.class
 com\mp\appusermanagement\utils\Util.class
 com\mp\appusermanagement\repositories\UserRepository.class
