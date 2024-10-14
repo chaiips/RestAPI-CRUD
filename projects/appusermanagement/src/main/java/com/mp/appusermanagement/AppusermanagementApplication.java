@@ -18,7 +18,9 @@ public class AppusermanagementApplication {
 		return new WebMvcConfigurer() {
 			@Override
 			public void addCorsMappings(CorsRegistry registry) {
-				registry.addMapping("/api/*").allowedOrigins("http://localhost:8081");
+				registry.addMapping("/api/**")
+				.allowedMethods("POST", "PUT", "GET", "DELETE", "OPTIONS")
+				.allowedOrigins("http://localhost:8081");
 			}
 		};
 	}

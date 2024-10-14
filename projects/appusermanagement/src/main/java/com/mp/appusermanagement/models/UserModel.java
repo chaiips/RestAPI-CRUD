@@ -30,7 +30,24 @@ public class UserModel {
     @Column(nullable = false)
     private String password;
 
-    // Para la versión 1 (V1)
     private String placeBirth;
     private Integer age;
+
+    public UserModel() {}
+
+    public UserModel(String name, String lastName, String email, String password, String placeBirth, Integer age) {
+        this.name = name;
+        this.lastName = lastName;
+        this.email = email;
+        this.password = password;
+        this.placeBirth = placeBirth;
+        this.age = age;
+    }
+
+    public UserModel(String name, String lastName, String email, String password) {
+        this.name = name;
+        this.lastName = lastName;
+        this.email = email;
+        this.password = password;
+    }
 }

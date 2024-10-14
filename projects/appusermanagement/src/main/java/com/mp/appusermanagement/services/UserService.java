@@ -1,74 +1,100 @@
 package com.mp.appusermanagement.services;
 
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.mp.appusermanagement.dto.UserDTO;
-import com.mp.appusermanagement.dto.UserDTO2;
 import com.mp.appusermanagement.models.UserModel;
 import com.mp.appusermanagement.repositories.UserRepository;
 import com.mp.appusermanagement.utils.Util;
 
-
 @Service
 public class UserService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     // Crear un nuevo usuario
     public ResponseEntity<Object> createUser(UserDTO user) {
-        Util util = new Util();
-
-        if (!util.isValidEmail(user.getEmail())) {
+        if (!Util.isValidEmail(user.getEmail())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El correo electrónico no es válido.");
         }
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ya existe un usuario con este correo.");
         }
-        if (!util.validatePassword(user.getPassword())) {
+        if (!Util.isValidPassword(user.getPassword())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("La contraseña no cumple los criterios.");
         }
         if (userRepository.existsByNameAndLastName(user.getName(), user.getLastName())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El nombre y apellido ya existen en otro registro.");
         }
 
-        UserModel newUser = new UserModel();
-        newUser.setName(user.getName());
-        newUser.setLastName(user.getLastName());
-        newUser.setEmail(user.getEmail());
-        newUser.setPassword(user.getPassword());
-        newUser.setPlaceBirth(user.getPlaceBirth());
-        newUser.setAge(user.getAge());    
+        UserModel newUser = convertDtoToEntity(user);
 
         try {
-            // Guardar el usuario en la base de datos
             userRepository.save(newUser);
             return ResponseEntity.status(HttpStatus.CREATED).body("Usuario creado con éxito.");
         } catch (Exception e) {
-            // Manejar la excepción y retornar un mensaje de error
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al crear el usuario: " + e.getMessage());
         }
     }
 
     // Obtener usuario por ID
-    public UserModel getUserById(Long id) {
-        return userRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Usuario no encontrado."));
+    public ResponseEntity<Object> getUserById(Long id) {
+        Optional<UserModel> user = userRepository.findById(id);
+        
+        if (user.isPresent()) {
+            return ResponseEntity.ok(user);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado.");
+        }
     }
+    
+    
+    
 
     // Actualizar usuario
-    public UserModel updateUser(Long id, UserDTO user) {
-        UserModel updateUser = getUserById(id);
-        updateUser.setName(user.getName());
-        updateUser.setLastName(user.getLastName());
-        updateUser.setPlaceBirth(user.getLastName());
-        updateUser.setAge(user.getAge());
-        return userRepository.save(updateUser);
+    public ResponseEntity<Object> updateUser(Long id, UserDTO userDto) {
+        Optional<UserModel> updateUser = userRepository.findById(id);
+
+        if (updateUser.isPresent()) {
+            UserModel user = updateUser.get();
+
+            user.setName(userDto.getName());
+            user.setLastName(userDto.getLastName());
+            user.setPlaceBirth(userDto.getPlaceBirth());
+            user.setAge(userDto.getAge());
+
+            if (!Util.isValidEmail(userDto.getEmail())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El correo electrónico no es válido.");
+            }
+            if (userRepository.findByEmail(userDto.getEmail()).isPresent()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ya existe un usuario con este correo.");
+            }
+            if (!Util.isValidPassword(userDto.getPassword())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("La contraseña no cumple los criterios.");
+            }
+            if (userRepository.existsByNameAndLastName(userDto.getName(), userDto.getLastName())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El nombre y apellido ya existen en otro registro.");
+            }
+    
+            try {
+                userRepository.save(user);
+                return ResponseEntity.ok(user);
+            } catch (Exception e) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al modificar el usuario: " + e.getMessage());
+            }
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado.");
+        }
+
     }
 
     // Eliminar usuario por ID
@@ -80,37 +106,14 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
-    // Crear un nuevo usuario v2 - Logica interna de Version 2.0
-     public ResponseEntity<Object> createUserV2(UserDTO2 user) {
-        Util util = new Util();
-
-        if (!util.isValidEmail(user.getEmail())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El correo electrónico no es válido.");
-        }
-        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ya existe un usuario con este correo.");
-        }
-        if (!util.validatePassword(user.getPassword())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("La contraseña no cumple los criterios.");
-        }
-        if (userRepository.existsByNameAndLastName(user.getName(), user.getLastName())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El nombre y apellido ya existen en otro registro.");
-        }
-
-        UserModel newUser = new UserModel();
-        newUser.setName(user.getName());
-        newUser.setLastName(user.getLastName());
-        newUser.setEmail(user.getEmail());
-        newUser.setPassword(user.getPassword());
-            
-        try {
-            // Guardar el usuario en la base de datos
-            userRepository.save(newUser);
-            return ResponseEntity.status(HttpStatus.CREATED).body("Usuario creado con éxito.");
-        } catch (Exception e) {
-            // Manejar la excepción y retornar un mensaje de error
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al crear el usuario: " + e.getMessage());
-        }
+    private UserModel convertDtoToEntity(UserDTO dto) {
+        return new UserModel(
+            dto.getName(),
+            dto.getLastName(),
+            dto.getEmail(),
+            dto.getPassword(),
+            dto.getPlaceBirth(),
+            dto.getAge()
+        );
     }
 }
-
